@@ -19,40 +19,21 @@ cmd="apt-get"
 
 sys_bit=$(uname -m)
 
-case $sys_bit in
-i[36]86)
+if [[ $sys_bit == "i386" || $sys_bit == "i686" ]]; then
 	v2ray_bit="32"
-	caddy_arch="386"
-	;;
-'amd64' | x86_64)
+elif [[ $sys_bit == "x86_64" ]]; then
 	v2ray_bit="64"
-	caddy_arch="amd64"
-	;;
-*armv6*)
-	v2ray_bit="arm32-v6"
-	caddy_arch="arm6"
-	;;
-*armv7*)
-	v2ray_bit="arm32-v7a"
-	caddy_arch="arm7"
-	;;
-*aarch64* | *armv8*)
-	v2ray_bit="arm64-v8a"
-	caddy_arch="arm64"
-	;;
-*)
+else
 	echo -e " 
-	哈哈……这个 ${red}辣鸡脚本${none} 不支持你的系统。 ${yellow}(-_-) ${none}
-
+	哈哈……这个 ${red}辣鸡脚本${none} 不支持你的1系统。 ${yellow}(-_-) ${none}
 	备注: 仅支持 Ubuntu 16+ / Debian 8+ / CentOS 7+ 系统
 	" && exit 1
-	;;
-esac
+fi
 
 # 笨笨的检测方法
-if [[ $(command -v apt-get) || $(command -v yum) ]] && [[ $(command -v systemctl) ]]; then
+if [[ -f /usr/bin/apt-get || -f /usr/bin/yum ]] && [[ -f /bin/systemctl ]]; then
 
-	if [[ $(command -v yum) ]]; then
+	if [[ -f /usr/bin/yum ]]; then
 
 		cmd="yum"
 
@@ -61,8 +42,7 @@ if [[ $(command -v apt-get) || $(command -v yum) ]] && [[ $(command -v systemctl
 else
 
 	echo -e " 
-	哈哈……这个 ${red}辣鸡脚本${none} 不支持你的系统。 ${yellow}(-_-) ${none}
-
+	哈哈……这个 ${red}辣鸡脚本${none} 不支持你的2系统。 ${yellow}(-_-) ${none}
 	备注: 仅支持 Ubuntu 16+ / Debian 8+ / CentOS 7+ 系统
 	" && exit 1
 
@@ -110,7 +90,6 @@ transport=(
 	QUIC_wechat-video_dynamicPort
 	QUIC_dtls_dynamicPort
 	QUIC_wireguard_dynamicPort
-	VLESS_WebSocket_TLS
 )
 
 ciphers=(
@@ -127,32 +106,7 @@ _load() {
 	local _dir="/etc/v2ray/233boy/v2ray/src/"
 	. "${_dir}$@"
 }
-_sys_timezone() {
-	IS_OPENVZ=
-	if hostnamectl status | grep -q openvz; then
-		IS_OPENVZ=1
-	fi
 
-	echo
-	timedatectl set-timezone Asia/Shanghai
-	timedatectl set-ntp true
-	echo "已将你的主机设置为Asia/Shanghai时区并通过systemd-timesyncd自动同步时间。"
-	echo
-
-	if [[ $IS_OPENVZ ]]; then
-		echo
-		echo -e "你的主机环境为 ${yellow}Openvz${none} ，建议使用${yellow}v2ray mkcp${none}系列协议。"
-		echo -e "注意：${yellow}Openvz${none} 系统时间无法由虚拟机内程序控制同步。"
-		echo -e "如果主机时间跟实际相差${yellow}超过90秒${none}，v2ray将无法正常通信，请发ticket联系vps主机商调整。"
-	fi
-}
-
-_sys_time() {
-	echo -e "\n主机时间：${yellow}"
-	timedatectl status | sed -n '1p;4p'
-	echo -e "${none}"
-	[[ $IS_OPENV ]] && pause
-}
 v2ray_config() {
 	# clear
 	echo
@@ -176,7 +130,7 @@ v2ray_config() {
 		read -p "$(echo -e "(默认协议: ${cyan}TCP$none)"):" v2ray_transport
 		[ -z "$v2ray_transport" ] && v2ray_transport=1
 		case $v2ray_transport in
-		[1-9] | [1-2][0-9] | 3[0-3])
+		[1-9] | [1-2][0-9] | 3[0-2])
 			echo
 			echo
 			echo -e "$yellow V2Ray 传输协议 = $cyan${transport[$v2ray_transport - 1]}$none"
@@ -193,7 +147,7 @@ v2ray_config() {
 }
 v2ray_port_config() {
 	case $v2ray_transport in
-	4 | 5 | 33)
+	4 | 5)
 		tls_config
 		;;
 	*)
@@ -216,7 +170,7 @@ v2ray_port_config() {
 				;;
 			esac
 		done
-		if [[ $v2ray_transport -ge 18 && $v2ray_transport -ne 33 ]]; then
+		if [[ $v2ray_transport -ge 18 ]]; then
 			v2ray_dynamic_port_start
 		fi
 		;;
@@ -332,7 +286,7 @@ tls_config() {
 
 	while :; do
 		echo
-		echo -e "请输入一个 ${magenta}正确的域名${none}，一定一定一定要正确，不！能！出！错！"
+		echo -e "请输入一个 $magenta正确的域名$none，一定一定一定要正确，不！能！出！错！"
 		read -p "(例如：233blog.com): " domain
 		[ -z "$domain" ] && error && continue
 		echo
@@ -344,11 +298,11 @@ tls_config() {
 	get_ip
 	echo
 	echo
-	echo -e "$yellow 请将 $magenta$domain$none $yellow 解析到: $cyan$ip$none"
+	echo -e "$yellow 请将 $magenta$domain$none $yellow解析到: $cyan$ip$none"
 	echo
-	echo -e "$yellow 请将 $magenta$domain$none $yellow 解析到: $cyan$ip$none"
+	echo -e "$yellow 请将 $magenta$domain$none $yellow解析到: $cyan$ip$none"
 	echo
-	echo -e "$yellow 请将 $magenta$domain$none $yellow 解析到: $cyan$ip$none"
+	echo -e "$yellow 请将 $magenta$domain$none $yellow解析到: $cyan$ip$none"
 	echo "----------------------------------------------------------------"
 	echo
 
@@ -373,7 +327,7 @@ tls_config() {
 
 	done
 
-	if [[ $v2ray_transport -eq 4 ]]; then
+	if [[ $v2ray_transport -ne 5 ]]; then
 		auto_tls_config
 	else
 		caddy=true
@@ -386,13 +340,10 @@ tls_config() {
 }
 auto_tls_config() {
 	echo -e "
-
 		安装 Caddy 来实现 自动配置 TLS
 		
 		如果你已经安装 Nginx 或 Caddy
-
 		$yellow并且..自己能搞定配置 TLS$none
-
 		那么就不需要 打开自动配置 TLS
 		"
 	echo "----------------------------------------------------------------"
@@ -443,7 +394,7 @@ path_config_ask() {
 		N | n)
 			echo
 			echo
-			echo -e "$yellow 网站伪装 和 路径分流 = $cyan 不想配置 $none"
+			echo -e "$yellow 网站伪装 和 路径分流 = $cyan不想配置$none"
 			echo "----------------------------------------------------------------"
 			echo
 			break
@@ -457,7 +408,7 @@ path_config_ask() {
 path_config() {
 	echo
 	while :; do
-		echo -e "请输入想要 ${magenta} 用来分流的路径 $none , 例如 /233blog , 那么只需要输入 233blog 即可"
+		echo -e "请输入想要 ${magenta}用来分流的路径$none , 例如 /233blog , 那么只需要输入 233blog 即可"
 		read -p "$(echo -e "(默认: [${cyan}233blog$none]):")" path
 		[[ -z $path ]] && path="233blog"
 
@@ -484,7 +435,7 @@ path_config() {
 proxy_site_config() {
 	echo
 	while :; do
-		echo -e "请输入 ${magenta}一个正确的 $none ${cyan}网址$none 用来作为 ${cyan}网站的伪装$none , 例如 https://liyafly.com"
+		echo -e "请输入 ${magenta}一个正确的$none ${cyan}网址$none 用来作为 ${cyan}网站的伪装$none , 例如 https://liyafly.com"
 		echo -e "举例...你当前的域名是 $green$domain$none , 伪装的网址的是 https://liyafly.com"
 		echo -e "然后打开你的域名时候...显示出来的内容就是来自 https://liyafly.com 的内容"
 		echo -e "其实就是一个反代...明白就好..."
@@ -533,7 +484,7 @@ blocked_hosts() {
 			blocked_ad_info="关闭"
 			echo
 			echo
-			echo -e "$yellow 广告拦截 = $cyan 关闭 $none"
+			echo -e "$yellow 广告拦截 = $cyan关闭$none"
 			echo "----------------------------------------------------------------"
 			echo
 			break
@@ -684,7 +635,7 @@ install_info() {
 	echo
 	echo -e "$yellow V2Ray 传输协议 = $cyan${transport[$v2ray_transport - 1]}$none"
 
-	if [[ $v2ray_transport == [45] || $v2ray_transport == 33 ]]; then
+	if [[ $v2ray_transport == [45] ]]; then
 		echo
 		echo -e "$yellow V2Ray 端口 = $cyan$v2ray_port$none"
 		echo
@@ -702,7 +653,7 @@ install_info() {
 			echo
 			echo -e "$yellow 路径分流 = ${cyan}/${path}$none"
 		fi
-	elif [[ $v2ray_transport -ge 18 && $v2ray_transport -ne 33 ]]; then
+	elif [[ $v2ray_transport -ge 18 ]]; then
 		echo
 		echo -e "$yellow V2Ray 端口 = $cyan$v2ray_port$none"
 		echo
@@ -746,9 +697,7 @@ domain_check() {
 	# 	$cmd install dnsutils -y
 	# fi
 	# test_domain=$(dig $domain +short)
-	# test_domain=$(ping $domain -c 1 -4 | grep -oE -m1 "([0-9]{1,3}\.){3}[0-9]{1,3}")
-	# test_domain=$(wget -qO- --header='accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$domain&type=A" | grep -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -1)
-	test_domain=$(curl -sH 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$domain&type=A" | grep -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -1)
+	test_domain=$(ping $domain -c 1 | grep -oE -m1 "([0-9]{1,3}\.){3}[0-9]{1,3}")
 	if [[ $test_domain != $ip ]]; then
 		echo
 		echo -e "$red 检测域名解析错误....$none"
@@ -782,16 +731,14 @@ caddy_config() {
 install_v2ray() {
 	$cmd update -y
 	if [[ $cmd == "apt-get" ]]; then
-		$cmd install -y lrzsz git zip unzip curl wget qrencode libcap2-bin dbus
+		$cmd install -y lrzsz git zip unzip curl wget qrencode libcap2-bin
 	else
 		# $cmd install -y lrzsz git zip unzip curl wget qrencode libcap iptables-services
 		$cmd install -y lrzsz git zip unzip curl wget qrencode libcap
 	fi
 	ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 	[ -d /etc/v2ray ] && rm -rf /etc/v2ray
-	# date -s "$(curl -sI g.cn | grep Date | cut -d' ' -f3-6)Z"
-	_sys_timezone
-	_sys_time
+	date -s "$(curl -sI g.cn | grep Date | cut -d' ' -f3-6)Z"
 
 	if [[ $local_install ]]; then
 		if [[ ! -d $(pwd)/config ]]; then
@@ -827,37 +774,116 @@ install_v2ray() {
 	_mkdir_dir
 }
 
+open_port() {
+	if [[ $cmd == "apt-get" ]]; then
+		if [[ $1 != "multiport" ]]; then
+
+			iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport $1 -j ACCEPT
+			iptables -I INPUT -m state --state NEW -m udp -p udp --dport $1 -j ACCEPT
+			ip6tables -I INPUT -m state --state NEW -m tcp -p tcp --dport $1 -j ACCEPT
+			ip6tables -I INPUT -m state --state NEW -m udp -p udp --dport $1 -j ACCEPT
+
+			# firewall-cmd --permanent --zone=public --add-port=$1/tcp
+			# firewall-cmd --permanent --zone=public --add-port=$1/udp
+			# firewall-cmd --reload
+
+		else
+
+			local multiport="${v2ray_dynamic_port_start_input}:${v2ray_dynamic_port_end_input}"
+			iptables -I INPUT -p tcp --match multiport --dports $multiport -j ACCEPT
+			iptables -I INPUT -p udp --match multiport --dports $multiport -j ACCEPT
+			ip6tables -I INPUT -p tcp --match multiport --dports $multiport -j ACCEPT
+			ip6tables -I INPUT -p udp --match multiport --dports $multiport -j ACCEPT
+
+			# local multi_port="${v2ray_dynamic_port_start_input}-${v2ray_dynamic_port_end_input}"
+			# firewall-cmd --permanent --zone=public --add-port=$multi_port/tcp
+			# firewall-cmd --permanent --zone=public --add-port=$multi_port/udp
+			# firewall-cmd --reload
+
+		fi
+		iptables-save >/etc/iptables.rules.v4
+		ip6tables-save >/etc/iptables.rules.v6
+		# else
+		# 	service iptables save >/dev/null 2>&1
+		# 	service ip6tables save >/dev/null 2>&1
+	fi
+}
+del_port() {
+	if [[ $cmd == "apt-get" ]]; then
+		if [[ $1 != "multiport" ]]; then
+			# if [[ $cmd == "apt-get" ]]; then
+			iptables -D INPUT -m state --state NEW -m tcp -p tcp --dport $1 -j ACCEPT
+			iptables -D INPUT -m state --state NEW -m udp -p udp --dport $1 -j ACCEPT
+			ip6tables -D INPUT -m state --state NEW -m tcp -p tcp --dport $1 -j ACCEPT
+			ip6tables -D INPUT -m state --state NEW -m udp -p udp --dport $1 -j ACCEPT
+			# else
+			# 	firewall-cmd --permanent --zone=public --remove-port=$1/tcp
+			# 	firewall-cmd --permanent --zone=public --remove-port=$1/udp
+			# fi
+		else
+			# if [[ $cmd == "apt-get" ]]; then
+			local ports="${v2ray_dynamicPort_start}:${v2ray_dynamicPort_end}"
+			iptables -D INPUT -p tcp --match multiport --dports $ports -j ACCEPT
+			iptables -D INPUT -p udp --match multiport --dports $ports -j ACCEPT
+			ip6tables -D INPUT -p tcp --match multiport --dports $ports -j ACCEPT
+			ip6tables -D INPUT -p udp --match multiport --dports $ports -j ACCEPT
+			# else
+			# 	local ports="${v2ray_dynamicPort_start}-${v2ray_dynamicPort_end}"
+			# 	firewall-cmd --permanent --zone=public --remove-port=$ports/tcp
+			# 	firewall-cmd --permanent --zone=public --remove-port=$ports/udp
+			# fi
+		fi
+		iptables-save >/etc/iptables.rules.v4
+		ip6tables-save >/etc/iptables.rules.v6
+		# else
+		# 	service iptables save >/dev/null 2>&1
+		# 	service ip6tables save >/dev/null 2>&1
+	fi
+
+}
+
 config() {
 	cp -f /etc/v2ray/233boy/v2ray/config/backup.conf $backup
 	cp -f /etc/v2ray/233boy/v2ray/v2ray.sh $_v2ray_sh
 	chmod +x $_v2ray_sh
 
 	v2ray_id=$uuid
-	alterId=0
+	alterId=233
 	ban_bt=true
-	if [[ $v2ray_transport -ge 18 && $v2ray_transport -ne 33 ]]; then
+	if [[ $v2ray_transport -ge 18 ]]; then
 		v2ray_dynamicPort_start=${v2ray_dynamic_port_start_input}
 		v2ray_dynamicPort_end=${v2ray_dynamic_port_end_input}
 	fi
 	_load config.sh
 
-	# if [[ $cmd == "apt-get" ]]; then
-	# 	cat >/etc/network/if-pre-up.d/iptables <<-EOF
-	# 		#!/bin/sh
-	# 		/sbin/iptables-restore < /etc/iptables.rules.v4
-	# 		/sbin/ip6tables-restore < /etc/iptables.rules.v6
-	# 	EOF
-	# 	chmod +x /etc/network/if-pre-up.d/iptables
-	# 	# else
-	# 	# 	[ $(pgrep "firewall") ] && systemctl stop firewalld
-	# 	# 	systemctl mask firewalld
-	# 	# 	systemctl disable firewalld
-	# 	# 	systemctl enable iptables
-	# 	# 	systemctl enable ip6tables
-	# 	# 	systemctl start iptables
-	# 	# 	systemctl start ip6tables
-	# fi
-	
+	if [[ $cmd == "apt-get" ]]; then
+		cat >/etc/network/if-pre-up.d/iptables <<-EOF
+#!/bin/sh
+/sbin/iptables-restore < /etc/iptables.rules.v4
+/sbin/ip6tables-restore < /etc/iptables.rules.v6
+	EOF
+		chmod +x /etc/network/if-pre-up.d/iptables
+		# else
+		# 	[ $(pgrep "firewall") ] && systemctl stop firewalld
+		# 	systemctl mask firewalld
+		# 	systemctl disable firewalld
+		# 	systemctl enable iptables
+		# 	systemctl enable ip6tables
+		# 	systemctl start iptables
+		# 	systemctl start ip6tables
+	fi
+
+	[[ $shadowsocks ]] && open_port $ssport
+	if [[ $v2ray_transport == [45] ]]; then
+		open_port "80"
+		open_port "443"
+		open_port $v2ray_port
+	elif [[ $v2ray_transport -ge 18 ]]; then
+		open_port $v2ray_port
+		open_port "multiport"
+	else
+		open_port $v2ray_port
+	fi
 	# systemctl restart v2ray
 	do_service restart v2ray
 	backup_config
@@ -866,13 +892,13 @@ config() {
 
 backup_config() {
 	sed -i "18s/=1/=$v2ray_transport/; 21s/=2333/=$v2ray_port/; 24s/=$old_id/=$uuid/" $backup
-	if [[ $v2ray_transport -ge 18 && $v2ray_transport -ne 33 ]]; then
+	if [[ $v2ray_transport -ge 18 ]]; then
 		sed -i "30s/=10000/=$v2ray_dynamic_port_start_input/; 33s/=20000/=$v2ray_dynamic_port_end_input/" $backup
 	fi
 	if [[ $shadowsocks ]]; then
 		sed -i "42s/=/=true/; 45s/=6666/=$ssport/; 48s/=233blog.com/=$sspass/; 51s/=chacha20-ietf/=$ssciphers/" $backup
 	fi
-	[[ $v2ray_transport == [45] || $v2ray_transport == 33 ]] && sed -i "36s/=233blog.com/=$domain/" $backup
+	[[ $v2ray_transport == [45] ]] && sed -i "36s/=233blog.com/=$domain/" $backup
 	[[ $caddy ]] && sed -i "39s/=/=true/" $backup
 	[[ $ban_ad ]] && sed -i "54s/=/=true/" $backup
 	if [[ $is_path ]]; then
@@ -901,7 +927,7 @@ error() {
 
 pause() {
 
-	read -rsp "$(echo -e "按 $green Enter 回车键 $none 继续....或按 $red Ctrl + C $none 取消.")" -d $'\n'
+	read -rsp "$(echo -e "按$green Enter 回车键 $none继续....或按$red Ctrl + C $none取消.")" -d $'\n'
 	echo
 }
 do_service() {
@@ -956,7 +982,7 @@ install() {
 	## bbr
 	_load bbr.sh
 	_try_enable_bbr
-
+	
 	get_ip
 	config
 	show_config_info
@@ -980,7 +1006,6 @@ uninstall() {
 	else
 		echo -e "
 		$red 大胸弟...你貌似毛有安装 V2Ray ....卸载个鸡鸡哦...$none
-
 		备注...仅支持卸载使用我 (233v2.com) 提供的 V2Ray 一键安装脚本
 		" && exit 1
 	fi
